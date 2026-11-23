@@ -3,4 +3,4 @@ name: container-project-was
 description: PetClinic WAS 계층 (Spring Boot REST API, Deployment)
 type: application
 version: 0.1.0
-appVersion: "0.0.3"
+appVersion: "0.0.5"
