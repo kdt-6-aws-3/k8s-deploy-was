@@ -1,0 +1,18 @@
+# Headless Service: StatefulSet Pod에 고정 DNS(db-0.db)를 주고, db 이름으로도 접속할 수 있다
+# 클러스터 내부 전용이라 외부 노출 없음 (Compose의 back internal 네트워크에 해당)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/part-of: petclinic
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: {{ .Values.name }}
+  ports:
+    - name: mysql
+      port: {{ .Values.service.port }}
+      targetPort: mysql

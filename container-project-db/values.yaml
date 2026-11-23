@@ -1,0 +1,53 @@
+# Service 이름이 곧 DNS 이름이다. WAS의 SPRING_DATASOURCE_URL(jdbc:mysql://db:3306/...)과 맞춘다
+name: db
+
+image:
+  repository: ghcr.io/kdt-6-aws-3/container-project-db
+  tag: "0.0.3"
+  pullPolicy: IfNotPresent
+
+# GHCR 패키지가 public이라 pull용 Secret이 필요 없다
+imagePullSecrets: []
+
+# DB 계정 · 비밀번호 (Compose의 db.env)
+# 비밀번호는 여기 적지 않는다. 설치할 때 --set 또는 git에서 제외한 파일(-f secret-values.yaml)로 넣는다
+auth:
+  database: petclinic
+  username: petclinic_app
+  rootPassword: ""
+  password: ""
+
+service:
+  port: 3306
+
+# Compose의 named volume(petclinic_db-data)에 해당
+# kubeadm 클러스터에는 기본 StorageClass가 없으므로 local-path-provisioner를 설치해서 쓴다
+persistence:
+  storageClassName: local-path
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+
+# 이미지의 실행 사용자 db-ops (UID/GID 999)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 999
+  runAsGroup: 999
+  fsGroup: 999
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+# 전용 ServiceAccount: default SA를 같이 쓰지 않는다
+# 앱이 Kubernetes API를 호출하지 않으므로 API 토큰을 Pod에 마운트하지 않는다
+serviceAccount:
+  automountToken: false

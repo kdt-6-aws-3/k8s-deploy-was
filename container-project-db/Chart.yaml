@@ -1,0 +1,6 @@
+apiVersion: v2
+name: container-project-db
+description: PetClinic DB 계층 (MySQL 8.4, StatefulSet + PVC)
+type: application
+version: 0.1.0
+appVersion: "0.0.3"

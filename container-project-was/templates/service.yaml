@@ -1,0 +1,17 @@
+# 클러스터 내부 전용. web(Nginx)만 /api/ 요청을 이 Service로 보낸다
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/part-of: petclinic
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ .Values.name }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http

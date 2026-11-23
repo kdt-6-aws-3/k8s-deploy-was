@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/part-of: petclinic
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  SPRING_PROFILES_ACTIVE: {{ .Values.config.springProfilesActive | quote }}
+  SPRING_DATASOURCE_URL: {{ .Values.config.datasourceUrl | quote }}
+  SPRING_SQL_INIT_MODE: {{ .Values.config.sqlInitMode | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  APP_ENV: {{ .Values.config.appEnv | quote }}
+  TZ: {{ .Values.config.timezone | quote }}
+  JAVA_OPTS: {{ .Values.config.javaOpts | quote }}
+  # ADR-003: readiness에 DB 연결 상태를 포함한다. DB가 준비되기 전에는 트래픽을 받지 않는다
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  MANAGEMENT_ENDPOINT_HEALTH_GROUP_READINESS_INCLUDE: "readinessState,db"
