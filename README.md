@@ -9,7 +9,8 @@ WEB(React + Nginx)과 입구(Envoy Gateway)는 [k8s-deploy-web](https://github.c
 |---|---|---|
 | DB | 클러스터 안 `container-project-db` (StatefulSet + local-path PVC) | RDS MySQL Multi-AZ + RDS Proxy |
 | DB 인증 | 비밀번호 (Secret) | IAM 토큰 (IRSA, 15분짜리) + TLS |
-| 이미지 | GHCR `container-project-was:0.0.3` | ECR `was:0.0.4` (aws-advanced-jdbc-wrapper 포함) |
+| 이미지 | GHCR `container-project-was:0.0.3` | ECR `was:0.0.5` (aws-advanced-jdbc-wrapper, EFS 파일 로그) |
+| 로그 | stdout | EFS 파일 (`was/<Pod 이름>/app.log`) |
 | Pod 분산 | 노드(hostname) 기준 | AZ(2a · 2c) 기준 |
 | values | `values.yaml` | `values.yaml` + `values-eks.yaml` |
 
@@ -23,7 +24,7 @@ WEB(React + Nginx)과 입구(Envoy Gateway)는 [k8s-deploy-web](https://github.c
 │   ├── values.yaml                 # 기본값 (kubeadm)
 │   └── values-eks.yaml             # EKS 덮어쓰기
 └── eks/
-    └── storage-efs.yaml            # EFS StorageClass(efs-sc) + RWX PVC (EKS 전용)
+    └── storage-efs.yaml            # EFS StorageClass(efs-sc) + RWX PVC (EKS 로그용)
 ```
 
 ## 공통 보안 설정
@@ -92,10 +93,21 @@ kubectl -n petclinic exec deploy/was -- wget -qO- http://127.0.0.1:8080/actuator
 kubectl -n petclinic exec deploy/was -- wget -qO- "http://127.0.0.1:8080/api/owners?size=1"
 ```
 
-## EFS 참고
+## 로그 (EKS: EFS)
 
-`eks/storage-efs.yaml`의 PVC `petclinic-shared`는 Bound 상태로 준비만 해 두었습니다.
-지금 앱에는 파일을 저장하는 경로가 없어서 어떤 Pod에도 마운트하지 않습니다.
+EKS에서는 로그를 컨테이너 안이 아니라 EFS PVC `petclinic-shared`(`eks/storage-efs.yaml`)에 파일로 씁니다.
+Pod마다 `subPathExpr`로 자기 디렉터리만 마운트해서 레플리카끼리 같은 파일을 쓰지 않습니다.
+
+```
+<PVC 루트>/
+├── was/<Pod 이름>/app.log                 # JSON, 50MB · 하루 단위 롤링(gz), 7일 · 1GB 보관
+└── web/<Pod 이름>/access.log · error.log  # nginx (k8s-deploy-web)
+```
+
+- WAS: 이미지 0.0.5부터 `eks` 프로파일이면 logback이 stdout 대신 `${LOG_DIR}/app.log`에 씁니다 (`logs.enabled: true`)
+- kubeadm(`values.yaml`)은 `logs.enabled: false`라 지금처럼 stdout으로 나갑니다
+- EKS에서는 `kubectl logs`에 앱 로그가 거의 나오지 않습니다. 로그를 볼 때는 PVC를 마운트한 Pod에서 확인합니다
+- Pod 이름이 rollout마다 바뀌므로 이전 Pod 디렉터리는 남습니다. 필요하면 직접 지웁니다
 
 ## 정리 (비용)
 

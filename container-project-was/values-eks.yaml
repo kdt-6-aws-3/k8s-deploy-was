@@ -4,7 +4,8 @@
 image:
   repository: 852138520988.dkr.ecr.ap-northeast-2.amazonaws.com/aws-personal-project/was
   # 0.0.4: aws-advanced-jdbc-wrapper(IAM 토큰 접속) 포함. GHCR 0.0.3에는 없다
-  tag: "0.0.4"
+  # 0.0.5: eks 프로파일에서 로그를 stdout 대신 LOG_DIR(EFS) 파일로 쓴다
+  tag: "0.0.5"
 
 config:
   springProfilesActive: mysql,eks
@@ -35,3 +36,8 @@ topologySpreadConstraints:
         app.kubernetes.io/name: was
     matchLabelKeys:
       - pod-template-hash
+
+# 로그는 컨테이너 쓰기 레이어 대신 EFS(eks/storage-efs.yaml의 PVC)에 쓴다: was/<Pod 이름>/app.log
+logs:
+  enabled: true
+  claimName: petclinic-shared
