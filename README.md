@@ -9,7 +9,7 @@ WEB(React + Nginx)과 입구(Envoy Gateway)는 [k8s-deploy-web](https://github.c
 |---|---|---|
 | DB | 클러스터 안 `container-project-db` (StatefulSet + local-path PVC) | RDS MySQL Multi-AZ + RDS Proxy |
 | DB 인증 | 비밀번호 (Secret) | IAM 토큰 (IRSA, 15분짜리) + TLS |
-| 이미지 | GHCR `container-project-was:0.0.3` | ECR `was:0.0.5` (aws-advanced-jdbc-wrapper, EFS 파일 로그) |
+| 이미지 | GHCR `container-project-was:0.0.5` | ECR `was:0.0.5` (aws-advanced-jdbc-wrapper, EFS 파일 로그) |
 | 로그 | stdout | EFS 파일 (`was/<Pod 이름>/app.log`) |
 | Pod 분산 | 노드(hostname) 기준 | AZ(2a · 2c) 기준 |
 | values | `values.yaml` | `values.yaml` + `values-eks.yaml` |

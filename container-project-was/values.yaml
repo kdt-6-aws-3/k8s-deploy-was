@@ -5,7 +5,7 @@ replicaCount: 2
 
 image:
   repository: ghcr.io/kdt-6-aws-3/container-project-was
-  tag: "0.0.3"
+  tag: "0.0.5"
   pullPolicy: IfNotPresent
 
 # GHCR 패키지가 public이라 pull용 Secret이 필요 없다
