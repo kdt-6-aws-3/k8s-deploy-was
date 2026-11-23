@@ -1,0 +1,29 @@
+# EKS 전용: EFS 동적 프로비저닝 (EFS CSI 애드온 + IRSA 역할 aws-personal-project-efs-csi-role)
+# PVC 하나당 EFS 액세스 포인트가 하나씩 만들어진다. RWX라 2a · 2c 노드의 Pod가 같은 볼륨을 함께 쓴다
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0f930893a577e7db2
+  directoryPerms: "700"
+  # restricted PSA: was 이미지 사용자(UID/GID 10001)가 쓸 수 있게 소유자를 맞춘다
+  uid: "10001"
+  gid: "10001"
+  basePath: /petclinic
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: petclinic-shared
+  namespace: petclinic
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi

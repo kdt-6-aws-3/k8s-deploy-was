@@ -1,0 +1,37 @@
+# EKS 전용 덮어쓰기: helm upgrade --install was ./container-project-was -n petclinic -f container-project-was/values-eks.yaml
+# DB는 클러스터 안 db 차트 대신 RDS(Multi-AZ) + RDS Proxy를 쓴다. db 차트는 EKS에 설치하지 않는다
+
+image:
+  repository: 852138520988.dkr.ecr.ap-northeast-2.amazonaws.com/aws-personal-project/was
+  # 0.0.4: aws-advanced-jdbc-wrapper(IAM 토큰 접속) 포함. GHCR 0.0.3에는 없다
+  tag: "0.0.4"
+
+config:
+  springProfilesActive: mysql,eks
+  # ConfigMap env가 application-eks.properties의 URL보다 우선하므로 Proxy 주소를 여기서 직접 넣는다
+  datasourceUrl: jdbc:aws-wrapper:mysql://proxy-1795402596793-aws-personal-project-db.proxy-c7mc024oe68s.ap-northeast-2.rds.amazonaws.com:3306/petclinic?wrapperPlugins=iam&sslMode=VERIFY_IDENTITY&iamRegion=ap-northeast-2
+  # 빈 RDS에 처음 설치할 때만 always + replicaCount=1, 샘플 데이터가 들어가면 never + 2로 올린다
+  sqlInitMode: never
+
+datasource:
+  username: petclinic_app
+  # 비밀번호를 쓰지 않는다: iam 플러그인이 접속할 때마다 IRSA 자격 증명으로 만든 15분 토큰을 비밀번호 자리에 넣는다
+  # 차트의 required 검사를 통과시키기 위한 자리표시 값이다 (실제 DB 비밀번호 아님)
+  password: "iam-auth"
+
+# IRSA: 이 SA로 뜬 Pod만 aws-personal-project-was-role을 받는다 (신뢰 정책 sub = system:serviceaccount:petclinic:was)
+serviceAccount:
+  automountToken: false
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::852138520988:role/aws-personal-project-was-role
+
+# 노드 대신 AZ(2a · 2c) 기준으로 나눈다
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: was
+    matchLabelKeys:
+      - pod-template-hash
